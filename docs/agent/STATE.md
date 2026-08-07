@@ -17,3 +17,11 @@ Current product state:
 - Inventory is SQLite-backed and local-first.
 - Files are identified by SHA-256 content hash.
 - Safe deletion requires backup verification and explicit `--yes`.
+
+Active product direction:
+
+- The project should manage all personal media, mainly photos and videos, across distributed storage locations.
+- The target architecture is local SQLite for day-to-day inventory and cleanup plus synchronized inventory storage in W7S.io.
+- The CLI should remain the authority for inventory management, deletion, and cleanup because it can verify local filesystem state before destructive actions.
+- The desired safety bar is at least two independent backup/storage locations before cleanup is allowed.
+- The current plan is documented in `docs/design/product-plan.md`.

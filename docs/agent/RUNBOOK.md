@@ -39,3 +39,13 @@ PYTHONPATH=src python3 -m media_manager.cli --db "$tmpdir/inventory.sqlite" veri
 git status --short
 git push origin main
 ```
+
+## Planning Documents
+
+```sh
+sed -n '1,220p' docs/design/product-plan.md
+sed -n '1,220p' docs/design/architecture.md
+sed -n '1,220p' docs/design/backup-safety-model.md
+```
+
+When W7S sync service work starts, backend deploy verification must include a live `/health` response with `branch`, `commitHash`, and `deployedAt`.

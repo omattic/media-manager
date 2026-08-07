@@ -11,3 +11,11 @@ Files are identified by SHA-256 content hash. Paths are recorded as observed cop
 ## 2026-08-07: Deletion Requires Verification
 
 The `delete` command refuses to delete unless the inventory meets the requested copy count and backup requirements. Actual deletion also requires `--yes`.
+
+## 2026-08-07: Local CLI Owns Cleanup
+
+Deletion and cleanup workflows should stay in the local CLI. W7S sync can coordinate inventory and reporting, but destructive operations must re-hash and verify the local filesystem before deleting.
+
+## 2026-08-07: W7S Stores Inventory, Not Media Bytes
+
+The remote W7S database should synchronize inventory, metadata, manifests, and deletion ledger records. Media files remain in distributed user-owned storage locations.

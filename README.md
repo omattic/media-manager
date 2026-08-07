@@ -73,3 +73,4 @@ MEDIA_MANAGER_DB=/path/to/inventory.sqlite media-manager scan /media/drive --lab
 
 - [Architecture](docs/design/architecture.md)
 - [Backup Safety Model](docs/design/backup-safety-model.md)
+- [Product Plan](docs/design/product-plan.md)
