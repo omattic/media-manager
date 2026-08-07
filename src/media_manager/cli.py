@@ -41,7 +41,12 @@ def utc_now() -> str:
 
 
 def default_db_path() -> Path:
-    return Path(os.environ.get("PHOTO_SYSTEM_DB", "~/.local/share/photo-system/inventory.sqlite")).expanduser()
+    return Path(
+        os.environ.get(
+            "MEDIA_MANAGER_DB",
+            os.environ.get("PHOTO_SYSTEM_DB", "~/.local/share/media-manager/inventory.sqlite"),
+        )
+    ).expanduser()
 
 
 def connect(db_path: Path) -> sqlite3.Connection:

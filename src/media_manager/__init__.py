@@ -1,4 +1,4 @@
-"""Photo System media inventory tools."""
+"""Media Manager inventory tools."""
 
 __all__ = ["__version__"]
 

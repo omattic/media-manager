@@ -13,7 +13,7 @@ authors = [
 ]
 
 [project.scripts]
-media-manager = "photo_system.cli:main"
+media-manager = "media_manager.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

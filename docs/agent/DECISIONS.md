@@ -1,4 +1,4 @@
-# Photo System Decisions
+# Media Manager Decisions
 
 ## 2026-08-07: Local-First SQLite Inventory
 

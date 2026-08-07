@@ -1,4 +1,4 @@
-# Photo System
+# Media Manager
 
 Central repository for managing photo and video inventory, backup verification, and safe deletion workflows across laptops, phones, external drives, and cloud/archive destinations.
 
@@ -23,7 +23,7 @@ pip install -e .
 Run without installing:
 
 ```sh
-PYTHONPATH=src python3 -m photo_system.cli --help
+PYTHONPATH=src python3 -m media_manager.cli --help
 ```
 
 Initialize the inventory:
@@ -60,13 +60,13 @@ media-manager backup ~/Pictures/Trip /Volumes/ArchiveDrive/Trip --label archive-
 The default database path is:
 
 ```text
-~/.local/share/photo-system/inventory.sqlite
+~/.local/share/media-manager/inventory.sqlite
 ```
 
 Override it with:
 
 ```sh
-PHOTO_SYSTEM_DB=/path/to/inventory.sqlite media-manager scan /media/drive --label drive-01
+MEDIA_MANAGER_DB=/path/to/inventory.sqlite media-manager scan /media/drive --label drive-01
 ```
 
 ## Design Notes

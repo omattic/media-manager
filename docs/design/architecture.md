@@ -1,6 +1,6 @@
 # Architecture
 
-Photo System starts as a local-first media inventory and backup verification CLI.
+Media Manager starts as a local-first media inventory and backup verification CLI.
 
 ## Principles
 
