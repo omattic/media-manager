@@ -1,3 +1,3 @@
 # Media Manager Linked Repos
 
-No linked implementation repos yet.
+- `/home/gnu/omattic-manager` hosts the Telegram group/runtime where topic `media-manager` is bound.
