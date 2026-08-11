@@ -41,6 +41,41 @@ npm publish --access public
 
 The npm package is `@omattic/media-manager`. Run `npm whoami` before publishing to confirm npm auth.
 
+## GitHub Actions npm Publish
+
+Workflow file: `.github/workflows/publish-npm.yml`
+
+The workflow publishes `@omattic/media-manager` to the public npm registry. It runs on:
+
+- Manual workflow dispatch.
+- Pushing a tag that starts with `v`, such as `v0.1.0`.
+
+Required setup:
+
+1. Ensure the npm account or npm organization owns the `@omattic` scope.
+2. Create an npm access token with publish permission for `@omattic/media-manager` or the `@omattic` scope.
+3. In GitHub, open `omattic/media-manager`.
+4. Go to Settings, Secrets and variables, Actions.
+5. Add a repository secret named `NPM_TOKEN`.
+6. Paste the npm token as the value.
+7. Trigger the workflow manually, or create and push a release tag:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow uses Node 24, pnpm 10.15.0, `pnpm install --frozen-lockfile`, typecheck, tests, build, `npm pack --dry-run`, and then `npm publish --access public --provenance`.
+
+If using npm trusted publishing instead of `NPM_TOKEN`, configure npm trusted publishing for:
+
+- Organization or user: `omattic`
+- Repository: `media-manager`
+- Workflow filename: `publish-npm.yml`
+- Allowed action: `npm publish`
+
+Then remove the `NODE_AUTH_TOKEN` environment block from the publish step.
+
 ## Planning Documents
 
 ```sh

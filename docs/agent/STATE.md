@@ -9,6 +9,7 @@ Current repository state:
 - Telegram manager topic: `media-manager` topic id `8862`, runtime binding id `121`, chat id `-1003996402615`
 - Primary package: TypeScript CLI package `media-manager`
 - npm package name: `@omattic/media-manager`
+- npm publication is wired through `.github/workflows/publish-npm.yml`.
 - CLI entrypoint: `media-manager`
 - Default inventory DB: `~/.local/share/media-manager/inventory.sqlite`
 

@@ -118,6 +118,17 @@ corepack pnpm run test
 corepack pnpm run build
 ```
 
+## Publishing
+
+The npm package is `@omattic/media-manager`.
+
+Publishing is handled by `.github/workflows/publish-npm.yml`. Configure the repository secret `NPM_TOKEN` with an npm token that can publish to the `@omattic` scope, then either run the workflow manually or push a version tag:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## Design Notes
 
 - [Architecture](docs/design/architecture.md)
