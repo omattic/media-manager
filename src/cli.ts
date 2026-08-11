@@ -121,7 +121,7 @@ function runCommand(command: string, args: string[], globals: GlobalOptions): nu
     const reportName = requireArg(args, "report");
     if (reportName === "duplicates") {
       const report = duplicateReport(app.db);
-      writeOutput(globals, formatRows(report), report);
+      writeOutput(globals, formatDuplicateReport(report), report);
       return 0;
     }
     if (reportName === "unprotected") {
@@ -432,6 +432,78 @@ function formatRows(rows: unknown[]): string {
     return "No rows.";
   }
   return rows.map((row) => JSON.stringify(row)).join("\n");
+}
+
+interface DuplicateReportGroup {
+  matchBasis?: string;
+  count: number;
+  files: {
+    root: string;
+    relativePath: string;
+    sizeBytes?: string | null;
+    observedAt?: string | null;
+  }[];
+}
+
+function formatDuplicateReport(rows: DuplicateReportGroup[]): string {
+  if (rows.length === 0) {
+    return "No duplicate candidates found.";
+  }
+
+  const groupText = rows.map((group, index) => {
+    const rootLabels = [...new Set(group.files.map((file) => file.root))];
+    const roots = rootLabels.join(", ");
+    const size = commonSize(group.files);
+    const header = `Group ${index + 1}: ${group.count} ${plural(group.count, "file")} across ${rootLabels.length} ${plural(rootLabels.length, "root")}`;
+    const detailLines = [`Match: ${formatMatchBasis(group.matchBasis)}`, `Roots: ${roots}`];
+    if (size) {
+      detailLines.push(`Size: ${size}`);
+    }
+    const files = group.files
+      .map((file) => `  - ${file.root}: ${file.relativePath}${file.observedAt ? ` (seen ${file.observedAt})` : ""}`)
+      .join("\n");
+    return `${header}\n${detailLines.join("\n")}\nFiles:\n${files}`;
+  });
+
+  return `Duplicate candidates: ${rows.length} ${plural(rows.length, "group")}\n\n${groupText.join("\n\n")}`;
+}
+
+function commonSize(files: DuplicateReportGroup["files"]): string | undefined {
+  const sizes = new Set(files.map((file) => file.sizeBytes).filter((size): size is string => Boolean(size)));
+  if (sizes.size !== 1) {
+    return undefined;
+  }
+  const [size] = [...sizes];
+  return formatBytes(Number(size));
+}
+
+function formatMatchBasis(matchBasis: string | undefined): string {
+  if (matchBasis === "metadata-fingerprint") {
+    return "same size and modified time";
+  }
+  if (matchBasis === "name-size") {
+    return "same filename and size";
+  }
+  return matchBasis ?? "unknown";
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes)) {
+    return "unknown size";
+  }
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  const formatted = unitIndex === 0 ? String(value) : value.toFixed(value >= 10 ? 1 : 2).replace(/\.0$/, "");
+  return `${formatted} ${units[unitIndex]}`;
+}
+
+function plural(count: number, singular: string): string {
+  return count === 1 ? singular : `${singular}s`;
 }
 
 function progressLogger(

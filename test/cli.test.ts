@@ -107,6 +107,37 @@ describe("media-manager CLI", () => {
     expect(report[0]?.files.map((file) => file.relativePath).sort()).toEqual(["IMG_0404.JPG", "IMG_0404.JPG"]);
   });
 
+  it("prints duplicate reports in a readable text format by default", () => {
+    const workspace = tempWorkspace();
+    const secondRoot = join(workspace.dir, "second-drive");
+    mkdirSync(secondRoot);
+    const firstFile = join(workspace.root, "IMG_0404.JPG");
+    const secondFile = join(secondRoot, "IMG_0404.JPG");
+    writeFileSync(firstFile, "same-size");
+    writeFileSync(secondFile, "same-size");
+    utimesSync(firstFile, new Date("2026-01-01T00:00:00.000Z"), new Date("2026-01-01T00:00:00.000Z"));
+    utimesSync(secondFile, new Date("2026-02-01T00:00:00.000Z"), new Date("2026-02-01T00:00:00.000Z"));
+
+    expect(run(["--db", workspace.db, "--quiet", "register", workspace.root, "--label", "drive-a"])).toBe(0);
+    expect(run(["--db", workspace.db, "--quiet", "register", secondRoot, "--label", "drive-b"])).toBe(0);
+    expect(run(["--db", workspace.db, "--quiet", "scan", "drive-a"])).toBe(0);
+    expect(run(["--db", workspace.db, "--quiet", "scan", "drive-b"])).toBe(0);
+
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    expect(run(["--db", workspace.db, "report", "duplicates"])).toBe(0);
+
+    const output = stdout.mock.calls.map(([chunk]) => String(chunk)).join("");
+    expect(output).toContain("Duplicate candidates: 1 group");
+    expect(output).toContain("Group 1: 2 files across 2 roots");
+    expect(output).toContain("Match: same filename and size");
+    expect(output).toContain("Roots: drive-a, drive-b");
+    expect(output).toContain("Size: 9 B");
+    expect(output).toContain("Files:");
+    expect(output).toContain("- drive-a: IMG_0404.JPG");
+    expect(output).toContain("- drive-b: IMG_0404.JPG");
+    expect(output).not.toContain("\"files\"");
+  });
+
   it("does not report same-root name-size candidates by default", () => {
     const workspace = tempWorkspace();
     const nested = join(workspace.root, "takeout-copy");
