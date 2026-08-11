@@ -87,6 +87,51 @@ corepack pnpm media-manager -- manifest export archive-drive-01 --output archive
 corepack pnpm media-manager -- manifest import archive-drive-01.manifest.json
 ```
 
+## First External Drive Example
+
+For a user who installed the CLI from npm:
+
+```sh
+npm install -g @omattic/media-manager
+```
+
+Register the first writable drive:
+
+```sh
+media-manager register /Volumes/2TB_B --label google-takeout-drive --kind backup
+```
+
+Supported root kinds are:
+
+- `device`: local device storage, such as an internal photos folder.
+- `external`: an external drive or mounted folder that is not specifically a backup.
+- `backup`: a location intended to count as a backup copy.
+- `cloud`: a cloud-mounted or cloud-exported folder.
+- `archive`: long-term cold storage that may be mounted less often.
+
+Scan the drive:
+
+```sh
+media-manager scan google-takeout-drive
+```
+
+Check what was recorded:
+
+```sh
+media-manager status
+media-manager roots
+```
+
+After registering and scanning a second location, check protection coverage:
+
+```sh
+media-manager report unprotected
+media-manager report duplicates
+media-manager report stale
+```
+
+The `unprotected` report will usually list everything after the first scan because the system has only seen one location. Once a second registered location has overlapping media, the report shows what still needs another copy.
+
 The default database path is:
 
 ```text
