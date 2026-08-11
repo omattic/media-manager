@@ -107,6 +107,28 @@ describe("media-manager CLI", () => {
     expect(report[0]?.files.map((file) => file.relativePath).sort()).toEqual(["IMG_0404.JPG", "IMG_0404.JPG"]);
   });
 
+  it("does not report same-root name-size candidates by default", () => {
+    const workspace = tempWorkspace();
+    const nested = join(workspace.root, "takeout-copy");
+    mkdirSync(nested);
+    const firstFile = join(workspace.root, "IMG_0404.JPG");
+    const secondFile = join(nested, "IMG_0404.JPG");
+    writeFileSync(firstFile, "same-size");
+    writeFileSync(secondFile, "same-size");
+    utimesSync(firstFile, new Date("2026-01-01T00:00:00.000Z"), new Date("2026-01-01T00:00:00.000Z"));
+    utimesSync(secondFile, new Date("2026-02-01T00:00:00.000Z"), new Date("2026-02-01T00:00:00.000Z"));
+
+    expect(run(["--db", workspace.db, "--quiet", "register", workspace.root, "--label", "drive-a"])).toBe(0);
+    expect(run(["--db", workspace.db, "--quiet", "scan", "drive-a"])).toBe(0);
+
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    expect(run(["--db", workspace.db, "--json", "report", "duplicates"])).toBe(0);
+
+    const output = stdout.mock.calls.map(([chunk]) => String(chunk)).join("");
+    const report = JSON.parse(output) as unknown[];
+    expect(report).toHaveLength(0);
+  });
+
   it("shows scan progress logs for interactive runs", () => {
     const workspace = tempWorkspace();
     writeFileSync(join(workspace.root, "photo.jpg"), "sample");

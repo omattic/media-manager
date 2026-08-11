@@ -60,4 +60,4 @@ Scan error details should be persisted in SQLite and written into the scanned ro
 
 Normal protection reports should group files by a copy-portable metadata fingerprint. The fingerprint should not include relative path, inode, device id, ctime, or birthtime because those change across backup drives. The current portable fingerprint uses file size and modified time.
 
-Normal duplicate reports should include exact portable fingerprint matches and looser same-name/same-size candidates for copied or exported files whose modified times changed. Duplicate results are probable, not content-hash guarantees.
+Normal duplicate reports should include cross-root exact portable fingerprint matches and cross-root looser same-name/same-size candidates for copied or exported files whose modified times changed. Same-root cleanup reporting can be added separately. Duplicate results are probable, not content-hash guarantees.

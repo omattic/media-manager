@@ -98,7 +98,7 @@ Normal scan fingerprints should use filesystem metadata only:
 - ctime or birthtime when available for local observations.
 - inode or platform file ID when available for local observations.
 - portable protection fingerprint derived from size and mtime.
-- duplicate candidate key derived from same normalized filename and size when mtimes differ.
+- cross-root duplicate candidate key derived from same normalized filename and size when mtimes differ.
 - file type and mode.
 
 These fingerprints are useful for inventory, stale detection, and probable duplicate reporting. They are not cryptographic identity. Future `deep-verify` can compute stronger proof only for selected files.

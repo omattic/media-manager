@@ -27,7 +27,7 @@ Current product state:
 - Managed roots are writable folders or drives with `.media-manager/`.
 - Normal scans use filesystem metadata only and do not read media file contents.
 - Scan error details are stored in SQLite and in each scanned root manifest.
-- Protection grouping uses a portable metadata fingerprint based on file size and modified time. Duplicate grouping uses exact portable fingerprint matches plus same-name/same-size candidates when modified times differ. It is probable, not content-hash verification.
+- Protection grouping uses a portable metadata fingerprint based on file size and modified time. Duplicate grouping reports cross-root exact portable fingerprint matches plus cross-root same-name/same-size candidates when modified times differ. It is probable, not content-hash verification.
 - Scans are safe to re-run, but true checkpoint resume is not implemented yet. Interrupted scans should be restarted with the same command.
 - Milestone one does not include deletion or cleanup commands.
 

@@ -63,6 +63,7 @@ export function duplicateReport(db: Database.Database): DuplicateGroup[] {
 
   const exactGroups = [...groups.entries()]
     .filter(([, files]) => files.length > 1)
+    .filter(([, files]) => hasMultipleRoots(files))
     .map(([fingerprint, files]) => duplicateGroup("metadata-fingerprint", fingerprint, files));
   const seenSignatures = new Set(exactGroups.map((group) => fileSetSignature(group.files)));
   const nameSizeGroups = new Map<string, LatestFileRow[]>();
@@ -78,6 +79,7 @@ export function duplicateReport(db: Database.Database): DuplicateGroup[] {
 
   const candidateGroups = [...nameSizeGroups.entries()]
     .filter(([, files]) => files.length > 1)
+    .filter(([, files]) => hasMultipleRoots(files))
     .map(([key, files]) => duplicateGroup("name-size", key, files))
     .filter((group) => {
       const signature = fileSetSignature(group.files);
@@ -120,6 +122,10 @@ function nameSizeCandidateKey(row: LatestFileRow): string | undefined {
 
 function isReportableFile(row: LatestFileRow): boolean {
   return !posix.basename(row.relative_path).startsWith("._");
+}
+
+function hasMultipleRoots(files: LatestFileRow[]): boolean {
+  return new Set(files.map((file) => file.root_id)).size > 1;
 }
 
 function fileSetSignature(files: { root: string; relativePath: string }[]): string {
