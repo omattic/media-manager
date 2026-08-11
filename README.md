@@ -122,11 +122,11 @@ corepack pnpm run build
 
 The npm package is `@omattic/media-manager`.
 
-Publishing is handled by `.github/workflows/publish-npm.yml`. Configure the repository secret `NPM_TOKEN` with an npm token that can publish to the `@omattic` scope, then either run the workflow manually or push a version tag:
+Publishing is handled by `.github/workflows/publish-npm.yml` with npm trusted publishing. After the npm package is configured to trust this GitHub workflow, publish by running the workflow manually or pushing a version tag:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 For a brand-new npm package, trusted publishing cannot be configured until the package exists on npm. Use an npm token or manual publish for the first publish, then switch the package to trusted publishing from npm package settings.

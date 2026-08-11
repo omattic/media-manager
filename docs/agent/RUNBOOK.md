@@ -45,20 +45,21 @@ The npm package is `@omattic/media-manager`. Run `npm whoami` before publishing 
 
 Workflow file: `.github/workflows/publish-npm.yml`
 
-The workflow publishes `@omattic/media-manager` to the public npm registry. It runs on:
+The workflow publishes `@omattic/media-manager` to the public npm registry through npm trusted publishing. It runs on:
 
 - Manual workflow dispatch.
 - Pushing a tag that starts with `v`, such as `v0.1.0`.
 
-Required setup:
+Trusted publishing setup:
 
 1. Ensure the npm account or npm organization owns the `@omattic` scope.
-2. Create an npm access token with publish permission for `@omattic/media-manager` or the `@omattic` scope.
-3. In GitHub, open `omattic/media-manager`.
-4. Go to Settings, Secrets and variables, Actions.
-5. Add a repository secret named `NPM_TOKEN`.
-6. Paste the npm token as the value.
-7. Trigger the workflow manually, or create and push a release tag:
+2. Ensure `@omattic/media-manager` exists on npm.
+3. In npm package settings, configure trusted publishing for:
+   - Organization or user: `omattic`
+   - Repository: `media-manager`
+   - Workflow filename: `publish-npm.yml`
+   - Allowed action: `npm publish`
+4. Trigger the workflow manually, or create and push a release tag:
 
 ```sh
 git tag v0.1.0
@@ -87,7 +88,14 @@ After `@omattic/media-manager` exists on npm, switch to trusted publishing:
 - Workflow filename: `publish-npm.yml`
 - Allowed action: `npm publish`
 
-Then remove the `NODE_AUTH_TOKEN` environment block from the publish step and remove the `NPM_TOKEN` repository secret.
+Token fallback:
+
+If trusted publishing is not available, add a GitHub repository secret named `NPM_TOKEN` and add this environment block to the publish step:
+
+```yaml
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
 
 ## Planning Documents
 
