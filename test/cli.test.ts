@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -46,6 +46,33 @@ describe("media-manager CLI", () => {
     expect(run(["--db", first.db, "--quiet", "scan", first.root])).toBe(0);
     expect(run(["--db", second.db, "--quiet", "manifest", "import", join(first.root, ".media-manager", "manifest.json")])).toBe(0);
     expect(run(["--db", second.db, "--quiet", "verify", "video.mp4"])).toBe(0);
+  });
+
+  it("reports copied files across roots as probable duplicates", () => {
+    const workspace = tempWorkspace();
+    const secondRoot = join(workspace.dir, "second-drive");
+    mkdirSync(secondRoot);
+    const firstFile = join(workspace.root, "photo.jpg");
+    const secondFile = join(secondRoot, "copy.jpg");
+    writeFileSync(firstFile, "same-size");
+    writeFileSync(secondFile, "same-size");
+    const copiedModifiedAt = new Date("2026-01-01T00:00:00.000Z");
+    utimesSync(firstFile, copiedModifiedAt, copiedModifiedAt);
+    utimesSync(secondFile, copiedModifiedAt, copiedModifiedAt);
+
+    expect(run(["--db", workspace.db, "--quiet", "register", workspace.root, "--label", "drive-a"])).toBe(0);
+    expect(run(["--db", workspace.db, "--quiet", "register", secondRoot, "--label", "drive-b"])).toBe(0);
+    expect(run(["--db", workspace.db, "--quiet", "scan", "drive-a"])).toBe(0);
+    expect(run(["--db", workspace.db, "--quiet", "scan", "drive-b"])).toBe(0);
+
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    expect(run(["--db", workspace.db, "--json", "report", "duplicates"])).toBe(0);
+
+    const output = stdout.mock.calls.map(([chunk]) => String(chunk)).join("");
+    const report = JSON.parse(output) as { count: number; files: { root: string; relativePath: string }[] }[];
+    expect(report).toHaveLength(1);
+    expect(report[0]?.count).toBe(2);
+    expect(report[0]?.files.map((file) => file.root).sort()).toEqual(["drive-a", "drive-b"]);
   });
 
   it("shows scan progress logs for interactive runs", () => {

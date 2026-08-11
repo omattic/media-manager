@@ -55,3 +55,7 @@ Interactive scans should print progress logs to stderr so users can see traversa
 ## 2026-08-11: Scan Errors Are Inspectable
 
 Scan error details should be persisted in SQLite and written into the scanned root manifest. Users should be able to inspect the latest root scan errors with `scan-errors <path|label|scan-run-id>` instead of opening SQLite manually.
+
+## 2026-08-11: Duplicate Fingerprints Must Be Portable
+
+Normal duplicate and protection reports should group files by a copy-portable metadata fingerprint. The fingerprint should not include relative path, inode, device id, ctime, or birthtime because those change across backup drives. The current portable fingerprint uses file size and modified time, so duplicate results are probable, not content-hash guarantees.

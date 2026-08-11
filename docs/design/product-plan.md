@@ -47,7 +47,8 @@ Each registered root has a `.media-manager/` folder containing:
 - Detected volume metadata snapshots when available.
 - Relative file paths, never absolute paths.
 - Filesystem metadata: size, mtime, ctime or birthtime when available, file mode, and file type.
-- inode or file ID when available.
+- inode or file ID when available for root-local observations.
+- Copy-portable duplicate fingerprints should avoid path, inode, device id, ctime, and birthtime because those change across backup drives.
 - Fast metadata fingerprint.
 - Scan checkpoint data.
 
@@ -94,8 +95,9 @@ Normal scan fingerprints should use filesystem metadata only:
 - Relative path.
 - File size.
 - mtime with nanosecond precision when available.
-- ctime or birthtime when available.
-- inode or platform file ID when available.
+- ctime or birthtime when available for local observations.
+- inode or platform file ID when available for local observations.
+- portable duplicate fingerprint derived from size and mtime.
 - file type and mode.
 
 These fingerprints are useful for inventory, stale detection, and probable duplicate reporting. They are not cryptographic identity. Future `deep-verify` can compute stronger proof only for selected files.
