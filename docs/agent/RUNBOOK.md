@@ -35,8 +35,11 @@ node dist/cli.js --db "$tmpdir/inventory.sqlite" status --json
 
 ```sh
 git status --short
-git push origin main
+git push omattic main
+npm publish --access public
 ```
+
+The npm package is `@omattic/media-manager`. Run `npm whoami` before publishing to confirm npm auth.
 
 ## Planning Documents
 

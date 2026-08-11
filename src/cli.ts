@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import type Database from "better-sqlite3";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { APP_DIR_NAME, IDENTITY_FILE_NAME } from "./constants.js";
@@ -347,6 +347,9 @@ Commands:
 `);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const currentFile = fileURLToPath(import.meta.url);
+const invokedFile = process.argv[1] ? realpathSync(process.argv[1]) : undefined;
+
+if (invokedFile === currentFile) {
   process.exitCode = main();
 }

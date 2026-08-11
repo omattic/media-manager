@@ -17,6 +17,13 @@ corepack pnpm install
 
 If pnpm prompts to approve native builds, approve `better-sqlite3` and `esbuild`.
 
+Install from npm after publication:
+
+```sh
+npm install -g @omattic/media-manager
+media-manager --help
+```
+
 ## Run
 
 ```sh

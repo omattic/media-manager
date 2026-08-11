@@ -1,18 +1,36 @@
 {
-  "name": "media-manager",
+  "name": "@omattic/media-manager",
   "version": "0.1.0",
   "description": "Local-first media inventory CLI for writable drives and mounted folders.",
   "type": "module",
   "bin": {
-    "media-manager": "./dist/cli.js"
+    "media-manager": "dist/cli.js"
   },
   "packageManager": "pnpm@10.15.0",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
+    "prepack": "npm run build",
     "test": "vitest run",
     "dev": "tsx src/cli.ts",
     "media-manager": "tsx src/cli.ts"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs/design"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/omattic/media-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/omattic/media-manager/issues"
+  },
+  "homepage": "https://github.com/omattic/media-manager#readme",
+  "license": "UNLICENSED",
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0"

@@ -5,9 +5,10 @@ Created on 2026-08-07 as `/home/gnu/media-manager` and published to `github.com/
 Current repository state:
 
 - Local repo: `/home/gnu/media-manager`
-- GitHub remote: `https://github.com/guerrerocarlos/media-manager.git`
+- GitHub remote: `https://github.com/omattic/media-manager.git`
 - Telegram manager topic: `media-manager` topic id `8862`, runtime binding id `121`, chat id `-1003996402615`
 - Primary package: TypeScript CLI package `media-manager`
+- npm package name: `@omattic/media-manager`
 - CLI entrypoint: `media-manager`
 - Default inventory DB: `~/.local/share/media-manager/inventory.sqlite`
 
