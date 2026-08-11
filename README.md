@@ -115,6 +115,8 @@ Scan the drive:
 media-manager scan google-takeout-drive
 ```
 
+Interactive scans print progress logs to stderr while they walk the filesystem, finalize SQLite records, and write the root manifest. Use `--quiet` for silent automation and `--json` for machine-readable output without progress logs.
+
 Check what was recorded:
 
 ```sh
@@ -131,6 +133,8 @@ media-manager report stale
 ```
 
 The `unprotected` report will usually list everything after the first scan because the system has only seen one location. Once a second registered location has overlapping media, the report shows what still needs another copy.
+
+Scans are safe to run again, but they are not true resumable checkpoint scans yet. If a scan is interrupted, run the same command again and it will start a fresh scan from the beginning.
 
 The default database path is:
 

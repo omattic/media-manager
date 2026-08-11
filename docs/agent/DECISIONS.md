@@ -47,3 +47,7 @@ The first TypeScript milestone should not include deletion or cleanup commands. 
 ## 2026-08-11: Published CLI Auto-Updates
 
 Published npm installs should check for new package versions before each command, update the global package when a newer version exists, and re-run the command once. Source checkouts skip auto-update. Operators can disable it with `--no-auto-update` or `MEDIA_MANAGER_AUTO_UPDATE=0`.
+
+## 2026-08-11: Interactive Scan Progress, Checkpoint Resume Deferred
+
+Interactive scans should print progress logs to stderr so users can see traversal, finalization, manifest writing, and completion. `--quiet` and `--json` should suppress progress logs for automation. Scans are safe to re-run after interruption, but true checkpoint resume requires future traversal checkpointing and partial-run reconciliation.

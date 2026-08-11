@@ -11,7 +11,7 @@ import { CliError } from "./errors.js";
 import { exportManifest, importManifest } from "./manifest.js";
 import { duplicateReport, staleReport, unprotectedReport } from "./reports.js";
 import { assertRootKind, registerRoot, requireRegisteredRoot, volumeMetadata } from "./root.js";
-import { entryForFile, scanRoot } from "./scanner.js";
+import { entryForFile, scanRoot, type ScanProgressEvent } from "./scanner.js";
 import { writeOutput } from "./output.js";
 import type { OutputOptions } from "./types.js";
 
@@ -76,7 +76,15 @@ function runCommand(command: string, args: string[], globals: GlobalOptions): nu
     const { rootPath, identity } = requireRegisteredRoot(rootInput);
     upsertRoot(app.db, identity);
     insertRootObservation(app.db, identity.rootId, app.deviceId, rootPath, volumeMetadata(rootPath));
-    const result = scanRoot(app.db, app.deviceId, rootPath, identity, packageJson.version, includeAll);
+    const result = scanRoot(
+      app.db,
+      app.deviceId,
+      rootPath,
+      identity,
+      packageJson.version,
+      includeAll,
+      progressLogger(globals, identity.label, rootPath)
+    );
     writeOutput(globals, `Scanned ${result.filesSeen} file(s) for ${result.label}`, result);
     return result.errors > 0 ? 1 : 0;
   }
@@ -329,6 +337,36 @@ function formatRows(rows: unknown[]): string {
     return "No rows.";
   }
   return rows.map((row) => JSON.stringify(row)).join("\n");
+}
+
+function progressLogger(
+  globals: GlobalOptions,
+  label: string,
+  rootPath: string
+): ((event: ScanProgressEvent) => void) | undefined {
+  if (globals.quiet || globals.json) {
+    return undefined;
+  }
+  return (event) => {
+    const summary = `${event.filesSeen} file(s), ${event.directoriesSeen} directories, ${event.errors} error(s)`;
+    if (event.phase === "started") {
+      process.stderr.write(`Scanning ${label}: ${rootPath}\n`);
+      return;
+    }
+    if (event.phase === "walking") {
+      process.stderr.write(`Scanning progress: ${summary}\n`);
+      return;
+    }
+    if (event.phase === "finalizing") {
+      process.stderr.write(`Finalizing scan: ${summary}\n`);
+      return;
+    }
+    if (event.phase === "manifest") {
+      process.stderr.write(`Writing manifest: ${event.currentPath}\n`);
+      return;
+    }
+    process.stderr.write(`Scan complete: ${summary}\n`);
+  };
 }
 
 function printHelp(): void {

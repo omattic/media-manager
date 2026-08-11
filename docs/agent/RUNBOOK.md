@@ -31,6 +31,21 @@ node dist/cli.js --db "$tmpdir/inventory.sqlite" verify "$tmpdir/source/example.
 node dist/cli.js --db "$tmpdir/inventory.sqlite" status --json
 ```
 
+Interactive `scan` runs write progress logs to stderr:
+
+```sh
+node dist/cli.js scan source-device
+```
+
+Use `--quiet` for silent automation and `--json` for machine-readable command output without progress logs:
+
+```sh
+node dist/cli.js --quiet scan source-device
+node dist/cli.js --json scan source-device
+```
+
+Current scan interruption behavior: scans are safe to re-run from the beginning, but checkpoint resume is not implemented yet.
+
 ## Auto-Update
 
 Published npm installs check for the latest `@omattic/media-manager` version before every command. Source checkout runs skip auto-update automatically because their entrypoint is not under `node_modules/@omattic/media-manager`.
@@ -127,4 +142,4 @@ sed -n '1,220p' docs/design/backup-safety-model.md
 
 When W7S sync service work starts, backend deploy verification must include a live `/health` response with `branch`, `commitHash`, and `deployedAt`.
 
-Milestone one commands are CLI-only and cron-friendly. Commands should support stable exit codes, non-interactive flags, resumable scans, idempotent writes, `--json`, `--quiet`, and `--no-auto-update`.
+Milestone one commands are CLI-only and cron-friendly. Commands should support stable exit codes, non-interactive flags, safe restartable scans, idempotent writes, `--json`, `--quiet`, and `--no-auto-update`. True checkpoint resume remains future scanner work.

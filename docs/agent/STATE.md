@@ -21,9 +21,11 @@ Current product state:
 - Local SQLite storage uses `better-sqlite3`.
 - The CLI supports `init`, `register`, `roots`, `scan`, `status`, `report`, `verify`, and `manifest`.
 - Published npm installs auto-check for new versions before every command and update the global package when a newer version exists.
+- Interactive `scan` runs print progress logs to stderr. `--quiet` and `--json` suppress progress logs.
 - Inventory is SQLite-backed and local-first.
 - Managed roots are writable folders or drives with `.media-manager/`.
 - Normal scans use filesystem metadata only and do not read media file contents.
+- Scans are safe to re-run, but true checkpoint resume is not implemented yet. Interrupted scans should be restarted with the same command.
 - Milestone one does not include deletion or cleanup commands.
 
 Active product direction:
@@ -34,6 +36,7 @@ Active product direction:
 - Support macOS and Linux first.
 - Build only a CLI, designed so cron can run it later without prompts.
 - Keep `--no-auto-update` and `MEDIA_MANAGER_AUTO_UPDATE=0` available for cron and debugging.
+- Keep `scan` visible for interactive users while preserving quiet, JSON-friendly automation.
 - Each device should keep its own local SQLite database.
 - W7S sync comes after the non-centralized local workflow is solid.
 - Managed roots must be writable and contain a `.media-manager/` folder.

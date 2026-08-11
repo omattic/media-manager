@@ -17,9 +17,27 @@ export interface ScanResult {
   manifestPath: string;
 }
 
+export type ScanProgressPhase = "started" | "walking" | "finalizing" | "manifest" | "completed";
+
+export interface ScanProgressEvent {
+  phase: ScanProgressPhase;
+  filesSeen: number;
+  directoriesSeen: number;
+  errors: number;
+  currentPath?: string;
+}
+
+export type ScanProgressHandler = (event: ScanProgressEvent) => void;
+
 interface ScanError {
   path: string;
   message: string;
+}
+
+interface WalkStats {
+  directoriesSeen: number;
+  lastProgressFiles: number;
+  lastProgressDirectories: number;
 }
 
 export function scanRoot(
@@ -28,7 +46,8 @@ export function scanRoot(
   rootPath: string,
   identity: RootIdentity,
   scannerVersion: string,
-  includeAll: boolean
+  includeAll: boolean,
+  onProgress?: ScanProgressHandler
 ): ScanResult {
   const scanRunId = randomUUID();
   const startedAt = nowIso();
@@ -36,15 +55,22 @@ export function scanRoot(
   const entries: FileManifestEntry[] = [];
   const errors: ScanError[] = [];
   const seen = new Set<string>();
+  const stats: WalkStats = {
+    directoriesSeen: 0,
+    lastProgressFiles: 0,
+    lastProgressDirectories: 0
+  };
 
   db.prepare(`
     INSERT INTO scan_runs (id, root_id, device_id, started_at, status, manifest_path)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(scanRunId, identity.rootId, deviceId, startedAt, "running", manifestPath);
 
-  walk(rootPath, rootPath, includeAll, entries, seen, errors);
+  emitProgress(onProgress, "started", entries, stats, errors, rootPath);
+  walk(rootPath, rootPath, includeAll, entries, seen, errors, stats, onProgress);
 
   const now = nowIso();
+  emitProgress(onProgress, "finalizing", entries, stats, errors);
   const transaction = db.transaction(() => {
     const upsertFile = db.prepare(`
       INSERT INTO files (root_id, relative_path, file_type, first_seen_at, last_seen_at, status)
@@ -108,6 +134,7 @@ export function scanRoot(
   });
   transaction();
 
+  emitProgress(onProgress, "manifest", entries, stats, errors, manifestPath);
   const manifest: RootManifest = {
     manifestVersion: identity.manifestVersion,
     rootId: identity.rootId,
@@ -126,6 +153,7 @@ export function scanRoot(
     files: entries.sort((a, b) => a.relativePath.localeCompare(b.relativePath))
   };
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  emitProgress(onProgress, "completed", entries, stats, errors);
 
   return {
     scanRunId,
@@ -143,15 +171,21 @@ function walk(
   includeAll: boolean,
   entries: FileManifestEntry[],
   seen: Set<string>,
-  errors: ScanError[]
+  errors: ScanError[],
+  stats: WalkStats,
+  onProgress?: ScanProgressHandler
 ): void {
   let dirents;
   try {
     dirents = readdirSync(currentPath, { withFileTypes: true });
   } catch (error) {
     errors.push({ path: currentPath, message: error instanceof Error ? error.message : String(error) });
+    maybeEmitWalkingProgress(onProgress, entries, stats, errors, currentPath);
     return;
   }
+
+  stats.directoriesSeen += 1;
+  maybeEmitWalkingProgress(onProgress, entries, stats, errors, currentPath);
 
   for (const dirent of dirents) {
     if (dirent.name === APP_DIR_NAME) {
@@ -159,7 +193,7 @@ function walk(
     }
     const absolutePath = join(currentPath, dirent.name);
     if (dirent.isDirectory()) {
-      walk(rootPath, absolutePath, includeAll, entries, seen, errors);
+      walk(rootPath, absolutePath, includeAll, entries, seen, errors, stats, onProgress);
       continue;
     }
     if (!dirent.isFile()) {
@@ -172,10 +206,49 @@ function walk(
       const entry = entryForFile(rootPath, absolutePath);
       entries.push(entry);
       seen.add(entry.relativePath);
+      maybeEmitWalkingProgress(onProgress, entries, stats, errors, absolutePath);
     } catch (error) {
       errors.push({ path: absolutePath, message: error instanceof Error ? error.message : String(error) });
+      maybeEmitWalkingProgress(onProgress, entries, stats, errors, absolutePath);
     }
   }
+}
+
+function maybeEmitWalkingProgress(
+  onProgress: ScanProgressHandler | undefined,
+  entries: FileManifestEntry[],
+  stats: WalkStats,
+  errors: ScanError[],
+  currentPath: string
+): void {
+  if (!onProgress) {
+    return;
+  }
+  const fileDelta = entries.length - stats.lastProgressFiles;
+  const directoryDelta = stats.directoriesSeen - stats.lastProgressDirectories;
+  if (fileDelta < 500 && directoryDelta < 250) {
+    return;
+  }
+  stats.lastProgressFiles = entries.length;
+  stats.lastProgressDirectories = stats.directoriesSeen;
+  emitProgress(onProgress, "walking", entries, stats, errors, currentPath);
+}
+
+function emitProgress(
+  onProgress: ScanProgressHandler | undefined,
+  phase: ScanProgressPhase,
+  entries: FileManifestEntry[],
+  stats: WalkStats,
+  errors: ScanError[],
+  currentPath?: string
+): void {
+  onProgress?.({
+    phase,
+    filesSeen: entries.length,
+    directoriesSeen: stats.directoriesSeen,
+    errors: errors.length,
+    currentPath
+  });
 }
 
 export function entryForFile(rootPath: string, absolutePath: string): FileManifestEntry {

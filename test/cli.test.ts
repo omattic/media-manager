@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { main } from "../src/cli.js";
 
 function tempWorkspace(): { dir: string; db: string; root: string } {
@@ -16,6 +16,10 @@ function run(args: string[]): number {
 }
 
 describe("media-manager CLI", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("registers and scans a managed root without reading file contents", () => {
     const workspace = tempWorkspace();
     writeFileSync(join(workspace.root, "photo.jpg"), "sample");
@@ -42,5 +46,24 @@ describe("media-manager CLI", () => {
     expect(run(["--db", first.db, "--quiet", "scan", first.root])).toBe(0);
     expect(run(["--db", second.db, "--quiet", "manifest", "import", join(first.root, ".media-manager", "manifest.json")])).toBe(0);
     expect(run(["--db", second.db, "--quiet", "verify", "video.mp4"])).toBe(0);
+  });
+
+  it("shows scan progress logs for interactive runs", () => {
+    const workspace = tempWorkspace();
+    writeFileSync(join(workspace.root, "photo.jpg"), "sample");
+
+    expect(run(["--db", workspace.db, "--quiet", "register", workspace.root, "--label", "drive-a"])).toBe(0);
+
+    const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    expect(run(["--db", workspace.db, "scan", "drive-a"])).toBe(0);
+
+    const logOutput = stderr.mock.calls.map(([chunk]) => String(chunk)).join("");
+    expect(logOutput).toContain("Scanning drive-a:");
+    expect(logOutput).toContain("Finalizing scan:");
+    expect(logOutput).toContain("Writing manifest:");
+    expect(logOutput).toContain("Scan complete:");
+    expect(stdout).toHaveBeenCalled();
   });
 });
