@@ -1,60 +1,83 @@
 # Media Manager
 
-Central repository for managing photo and video inventory, backup verification, and safe deletion workflows across laptops, phones, external drives, and cloud/archive destinations.
+Local-first CLI for managing personal photo and video inventory across writable external drives and mounted folders.
 
-## Goals
+The first implementation is intentionally non-centralized:
 
-- Build a centralized yet distributed inventory of media files across devices and external drives.
-- Identify files by content hash, not only by path.
-- Track where each file exists and whether a copy is on a backup/archive location.
-- Provide a CLI that can verify backup coverage before deleting local files.
-- Make backup and restore workflows explicit, repeatable, and auditable.
+- Each device keeps its own local SQLite database.
+- Each managed root has a `.media-manager/` folder at its root.
+- Scans use filesystem metadata only and do not read media file contents.
+- W7S sync, cleanup, deletion, and deep content verification are planned later.
 
-## CLI MVP
-
-Install locally:
+## Install
 
 ```sh
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -e .
+corepack pnpm install
 ```
 
-Run without installing:
+If pnpm prompts to approve native builds, approve `better-sqlite3` and `esbuild`.
+
+## Run
 
 ```sh
-PYTHONPATH=src python3 -m media_manager.cli --help
+corepack pnpm media-manager -- --help
 ```
 
-Initialize the inventory:
+Build the CLI:
 
 ```sh
-media-manager init
+corepack pnpm build
+node dist/cli.js --help
 ```
 
-Scan a device or drive:
+## Basic Workflow
+
+Initialize the local inventory:
 
 ```sh
-media-manager scan ~/Pictures --label macbook-pictures --kind device
-media-manager scan /Volumes/ArchiveDrive --label archive-drive-01 --kind backup
+corepack pnpm media-manager -- init
 ```
 
-Verify a file has backup coverage:
+Register a writable external drive or mounted folder:
 
 ```sh
-media-manager verify ~/Pictures/photo.jpg --min-copies 2 --require-backup
+corepack pnpm media-manager -- register /Volumes/ArchiveDrive --label archive-drive-01 --kind backup
 ```
 
-Delete only after verification:
+Scan a registered root:
 
 ```sh
-media-manager delete ~/Pictures/photo.jpg --min-copies 2 --require-backup --yes
+corepack pnpm media-manager -- scan /Volumes/ArchiveDrive
+corepack pnpm media-manager -- scan archive-drive-01
 ```
 
-Copy files to a backup destination and record the destination:
+List known roots and status:
 
 ```sh
-media-manager backup ~/Pictures/Trip /Volumes/ArchiveDrive/Trip --label archive-drive-01
+corepack pnpm media-manager -- roots
+corepack pnpm media-manager -- status
+```
+
+Run reports:
+
+```sh
+corepack pnpm media-manager -- report unprotected --min-roots 2
+corepack pnpm media-manager -- report duplicates
+corepack pnpm media-manager -- report stale
+```
+
+Verify by relative path, metadata fingerprint, or actual file path:
+
+```sh
+corepack pnpm media-manager -- verify photo.jpg
+corepack pnpm media-manager -- verify /Volumes/ArchiveDrive/photo.jpg
+```
+
+Export or import a portable manifest:
+
+```sh
+corepack pnpm media-manager -- manifest export archive-drive-01 --output archive-drive-01.manifest.json
+corepack pnpm media-manager -- manifest import archive-drive-01.manifest.json
 ```
 
 The default database path is:
@@ -66,7 +89,26 @@ The default database path is:
 Override it with:
 
 ```sh
-MEDIA_MANAGER_DB=/path/to/inventory.sqlite media-manager scan /media/drive --label drive-01
+MEDIA_MANAGER_DB=/path/to/inventory.sqlite corepack pnpm media-manager -- status
+corepack pnpm media-manager -- --db /path/to/inventory.sqlite status
+```
+
+## Automation
+
+Commands are designed for later cron use:
+
+- `--json` for machine-readable output.
+- `--quiet` for silent successful runs.
+- Stable exit codes.
+- Idempotent registration and scanning.
+
+## Development
+
+```sh
+corepack pnpm install
+corepack pnpm run check
+corepack pnpm run test
+corepack pnpm run build
 ```
 
 ## Design Notes

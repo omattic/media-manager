@@ -1,17 +1,7 @@
-# Python
+dist/
+node_modules/
 __pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-.venv/
-
-# Local runtime state
-.env
-.env.*
+*.pyc
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
-
-# System files
-.DS_Store
-Thumbs.db

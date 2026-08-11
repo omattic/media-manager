@@ -4,17 +4,17 @@
 
 The initial system uses a local SQLite inventory so it works against laptops, mounted external drives, and copied archive folders without requiring a server.
 
-## 2026-08-07: Content Hash Identity
+## 2026-08-07: Content Hash Identity, Superseded
 
-Files are identified by SHA-256 content hash. Paths are recorded as observed copies, but they are not the canonical identity.
+The first Python prototype identified files by SHA-256 content hash. This is superseded for normal milestone-one scans by the 2026-08-11 metadata-only decision. Future explicit `deep-verify` may compute content hashes for selected files only.
 
-## 2026-08-07: Deletion Requires Verification
+## 2026-08-07: Deletion Requires Verification, Deferred
 
-The `delete` command refuses to delete unless the inventory meets the requested copy count and backup requirements. Actual deletion also requires `--yes`.
+The first Python prototype included a guarded `delete` command. Deletion is deferred after the 2026-08-11 TypeScript milestone-one decision.
 
-## 2026-08-07: Local CLI Owns Cleanup
+## 2026-08-07: Local CLI Owns Cleanup, Future
 
-Deletion and cleanup workflows should stay in the local CLI. W7S sync can coordinate inventory and reporting, but destructive operations must re-hash and verify the local filesystem before deleting.
+Future deletion and cleanup workflows should stay in the local CLI. W7S sync can coordinate inventory and reporting, but destructive operations must verify the local filesystem before deleting.
 
 ## 2026-08-07: W7S Stores Inventory, Not Media Bytes
 

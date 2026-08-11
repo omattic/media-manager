@@ -7,21 +7,25 @@ Current repository state:
 - Local repo: `/home/gnu/media-manager`
 - GitHub remote: `https://github.com/guerrerocarlos/media-manager.git`
 - Telegram manager topic: `media-manager` topic id `8862`, runtime binding id `121`, chat id `-1003996402615`
-- Primary package: Python CLI package `media-manager`
+- Primary package: TypeScript CLI package `media-manager`
 - CLI entrypoint: `media-manager`
 - Default inventory DB: `~/.local/share/media-manager/inventory.sqlite`
 
 Current product state:
 
-- Initial MVP CLI supports `init`, `scan`, `copies`, `verify`, `delete`, and `backup`.
+- Python has been removed.
+- The CLI is implemented in TypeScript for Node.js with `pnpm`.
+- Local SQLite storage uses `better-sqlite3`.
+- The CLI supports `init`, `register`, `roots`, `scan`, `status`, `report`, `verify`, and `manifest`.
 - Inventory is SQLite-backed and local-first.
-- Files are identified by SHA-256 content hash.
-- Safe deletion requires backup verification and explicit `--yes`.
+- Managed roots are writable folders or drives with `.media-manager/`.
+- Normal scans use filesystem metadata only and do not read media file contents.
+- Milestone one does not include deletion or cleanup commands.
 
 Active product direction:
 
 - The project should manage all personal media, mainly photos and videos, across distributed storage locations.
-- The next implementation should remove Python completely and rebuild the CLI in TypeScript for Node.js with `pnpm`.
+- The implementation should stay TypeScript-only.
 - Use `better-sqlite3` for local SQLite storage.
 - Support macOS and Linux first.
 - Build only a CLI, designed so cron can run it later without prompts.
