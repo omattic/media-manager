@@ -31,6 +31,24 @@ node dist/cli.js --db "$tmpdir/inventory.sqlite" verify "$tmpdir/source/example.
 node dist/cli.js --db "$tmpdir/inventory.sqlite" status --json
 ```
 
+## Auto-Update
+
+Published npm installs check for the latest `@omattic/media-manager` version before every command. Source checkout runs skip auto-update automatically because their entrypoint is not under `node_modules/@omattic/media-manager`.
+
+Skip auto-update for one command:
+
+```sh
+media-manager --no-auto-update status
+```
+
+Skip auto-update from cron or debugging shells:
+
+```sh
+MEDIA_MANAGER_AUTO_UPDATE=0 media-manager status
+```
+
+The updater sets `MEDIA_MANAGER_AUTO_UPDATED=1` before re-running the command after an install so it cannot loop.
+
 ## Publish
 
 ```sh
@@ -109,4 +127,4 @@ sed -n '1,220p' docs/design/backup-safety-model.md
 
 When W7S sync service work starts, backend deploy verification must include a live `/health` response with `branch`, `commitHash`, and `deployedAt`.
 
-Milestone one commands are CLI-only and cron-friendly. Commands should support stable exit codes, non-interactive flags, resumable scans, idempotent writes, `--json`, and `--quiet`.
+Milestone one commands are CLI-only and cron-friendly. Commands should support stable exit codes, non-interactive flags, resumable scans, idempotent writes, `--json`, `--quiet`, and `--no-auto-update`.

@@ -3,6 +3,7 @@ import type Database from "better-sqlite3";
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { maybeAutoUpdate } from "./auto-update.js";
 import { APP_DIR_NAME, IDENTITY_FILE_NAME } from "./constants.js";
 import { defaultDbPath } from "./config.js";
 import { openDb, insertRootObservation, upsertRoot } from "./db.js";
@@ -20,7 +21,7 @@ interface GlobalOptions extends OutputOptions {
 
 const packageJson = JSON.parse(
   readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../package.json"), "utf8")
-) as { version: string };
+) as { name: string; version: string };
 
 export function main(argv = process.argv.slice(2)): number {
   try {
@@ -201,6 +202,10 @@ function parseGlobals(argv: string[]): { globals: GlobalOptions; args: string[] 
       args.splice(index, 1);
       continue;
     }
+    if (arg === "--no-auto-update") {
+      args.splice(index, 1);
+      continue;
+    }
     index += 1;
   }
   return { globals, args };
@@ -330,7 +335,7 @@ function printHelp(): void {
   process.stdout.write(`media-manager ${packageJson.version}
 
 Usage:
-  media-manager [--db path] [--json] [--quiet] <command>
+  media-manager [--db path] [--json] [--quiet] [--no-auto-update] <command>
 
 Commands:
   init
@@ -351,5 +356,11 @@ const currentFile = fileURLToPath(import.meta.url);
 const invokedFile = process.argv[1] ? realpathSync(process.argv[1]) : undefined;
 
 if (invokedFile === currentFile) {
-  process.exitCode = main();
+  const updateExitCode = maybeAutoUpdate({
+    argv: process.argv.slice(2),
+    currentFile,
+    currentVersion: packageJson.version,
+    packageName: packageJson.name
+  });
+  process.exitCode = updateExitCode ?? main();
 }

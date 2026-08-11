@@ -43,3 +43,7 @@ A future `deep-verify` command may read selected files only when stronger proof 
 ## 2026-08-11: No Cleanup In Milestone One
 
 The first TypeScript milestone should not include deletion or cleanup commands. It should focus on registration, scanning, manifests, inventory, reports, and verification.
+
+## 2026-08-11: Published CLI Auto-Updates
+
+Published npm installs should check for new package versions before each command, update the global package when a newer version exists, and re-run the command once. Source checkouts skip auto-update. Operators can disable it with `--no-auto-update` or `MEDIA_MANAGER_AUTO_UPDATE=0`.

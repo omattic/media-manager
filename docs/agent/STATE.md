@@ -20,6 +20,7 @@ Current product state:
 - The CLI is implemented in TypeScript for Node.js with `pnpm`.
 - Local SQLite storage uses `better-sqlite3`.
 - The CLI supports `init`, `register`, `roots`, `scan`, `status`, `report`, `verify`, and `manifest`.
+- Published npm installs auto-check for new versions before every command and update the global package when a newer version exists.
 - Inventory is SQLite-backed and local-first.
 - Managed roots are writable folders or drives with `.media-manager/`.
 - Normal scans use filesystem metadata only and do not read media file contents.
@@ -32,6 +33,7 @@ Active product direction:
 - Use `better-sqlite3` for local SQLite storage.
 - Support macOS and Linux first.
 - Build only a CLI, designed so cron can run it later without prompts.
+- Keep `--no-auto-update` and `MEDIA_MANAGER_AUTO_UPDATE=0` available for cron and debugging.
 - Each device should keep its own local SQLite database.
 - W7S sync comes after the non-centralized local workflow is solid.
 - Managed roots must be writable and contain a `.media-manager/` folder.

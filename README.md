@@ -106,8 +106,27 @@ Commands are designed for later cron use:
 
 - `--json` for machine-readable output.
 - `--quiet` for silent successful runs.
+- `--no-auto-update` to skip the npm update check for one run.
 - Stable exit codes.
 - Idempotent registration and scanning.
+
+## Auto-Update
+
+When installed from npm, `media-manager` checks npm for a newer `@omattic/media-manager` version before running each command. If a newer version exists, it installs the latest global package and restarts the command once.
+
+Source checkouts and local development runs skip auto-update automatically.
+
+Disable auto-update for one command:
+
+```sh
+media-manager --no-auto-update status
+```
+
+Disable auto-update through the environment:
+
+```sh
+MEDIA_MANAGER_AUTO_UPDATE=0 media-manager status
+```
 
 ## Development
 
