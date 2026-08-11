@@ -1,6 +1,6 @@
 # Media Manager Runbook
 
-## Install
+## Current Python CLI
 
 ```sh
 python3 -m venv .venv
@@ -49,3 +49,18 @@ sed -n '1,220p' docs/design/backup-safety-model.md
 ```
 
 When W7S sync service work starts, backend deploy verification must include a live `/health` response with `branch`, `commitHash`, and `deployedAt`.
+
+## Planned TypeScript CLI
+
+The next implementation should replace Python completely.
+
+Expected local workflow after the TypeScript rebuild:
+
+```sh
+pnpm install
+pnpm test
+pnpm build
+pnpm media-manager --help
+```
+
+Milestone one commands should be CLI-only and cron-friendly. Commands should support stable exit codes, non-interactive flags, resumable scans, idempotent writes, `--json`, and `--quiet`.

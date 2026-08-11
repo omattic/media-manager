@@ -21,7 +21,14 @@ Current product state:
 Active product direction:
 
 - The project should manage all personal media, mainly photos and videos, across distributed storage locations.
-- The target architecture is local SQLite for day-to-day inventory and cleanup plus synchronized inventory storage in W7S.io.
-- The CLI should remain the authority for inventory management, deletion, and cleanup because it can verify local filesystem state before destructive actions.
-- The desired safety bar is at least two independent backup/storage locations before cleanup is allowed.
+- The next implementation should remove Python completely and rebuild the CLI in TypeScript for Node.js with `pnpm`.
+- Use `better-sqlite3` for local SQLite storage.
+- Support macOS and Linux first.
+- Build only a CLI, designed so cron can run it later without prompts.
+- Each device should keep its own local SQLite database.
+- W7S sync comes after the non-centralized local workflow is solid.
+- Managed roots must be writable and contain a `.media-manager/` folder.
+- Normal scans should use filesystem-provided metadata only and should not read media file contents.
+- Future `deep-verify` may read selected files only when stronger proof is needed.
+- Milestone one should not include deletion or cleanup commands.
 - The current plan is documented in `docs/design/product-plan.md`.

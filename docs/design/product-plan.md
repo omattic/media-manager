@@ -1,97 +1,139 @@
 # Product Plan
 
-Media Manager exists to make personal photo and video storage auditable. The core job is to know what media exists, where each copy lives, whether the inventory is current enough to trust, and whether a file can be cleaned up without risking data loss.
+Media Manager exists to make personal photo and video storage auditable without depending on a central service. The first product surface is a TypeScript CLI that can run from macOS or Linux, scan writable external drives and mounted folders, and reconcile state across devices through local SQLite databases plus `.media-manager/` manifests stored at each managed root.
+
+## Approved Direction
+
+- Build the CLI in TypeScript for Node.js.
+- Use `pnpm` for package management.
+- Use `better-sqlite3` for local SQLite storage, accepting native installs.
+- Remove the Python implementation completely during the TypeScript rebuild.
+- Support macOS and Linux first.
+- Build only a CLI in milestone one.
+- Keep command behavior cron-friendly: stable exit codes, non-interactive flags, resumable scans, idempotent writes, and optional JSON output.
+- Each device keeps its own local SQLite database.
+- W7S sync comes later and should improve coordination, not block local use.
+- Managed roots must be writable.
+- Each managed external drive or mounted folder gets a `.media-manager/` folder at its root.
+- Normal scans use filesystem metadata only and do not read media file contents.
+- Full content reads are reserved for a future explicit `deep-verify` command, limited to files that need stronger proof.
+- Milestone one excludes deletion and cleanup commands.
 
 ## Target Outcome
 
-- A local CLI manages day-to-day inventory, backup, restore, deduplication, and deletion workflows.
-- SQLite remains the local source of truth for each machine or drive workflow.
-- A W7S.io database stores synchronized inventory records so multiple devices can share state.
-- Every media item is backed up in at least two independent locations before cleanup is allowed.
-- Deletion tooling is conservative, explainable, and auditable.
+- The CLI knows which media files exist across laptops, mounted folders, and external drives.
+- A managed root can move between devices and still be recognized.
+- Any device can scan the same root and reconcile through the root manifest.
+- Reports identify probable duplicates, unprotected files, stale observations, and roots that need attention.
+- The design leaves room for future backup planning, cleanup, and W7S sync without changing the local data model.
 
 ## Product Boundaries
 
-- Media files remain distributed across laptops, phones, mounted drives, NAS paths, cloud exports, and archive disks.
-- The database stores inventory, metadata, manifests, and verification evidence. It does not need to store the media bytes.
-- The CLI is the authority for destructive actions because it can inspect the actual local filesystem before deletion.
-- W7S sync is for coordination, reporting, and recovery planning, not blind remote deletion approval.
+- Media files remain distributed across user-owned storage locations.
+- The local SQLite database stores inventory, device observations, scan history, and reportable state for the current device.
+- `.media-manager/` stores portable root identity and relative manifest data, not machine-specific paths or secrets.
+- The first milestone does not delete files, clean folders, copy backups, parse media content, or sync to W7S.
+- W7S should later store synchronized inventory records and expose a backend `/health` endpoint with `branch`, `commitHash`, and `deployedAt`.
 
-## Phases
+## Managed Root Manifest
 
-### Phase 1: Reliable Local Inventory
+Each registered root has a `.media-manager/` folder containing:
 
-- Add schema migrations with explicit versions.
-- Record stable location identity beyond labels: volume UUID, device serial when available, root fingerprint, and user notes.
-- Track copy freshness separately from copy status so stale evidence is visible.
-- Add `verify-location` to rescan a location and mark missing files.
-- Add reports for unprotected files, duplicate groups, largest duplicates, stale locations, and files seen only once.
-- Add tests around scan, backup, verification, deletion refusal, and stale copy handling.
+- Stable root ID.
+- Human label.
+- Manifest format version.
+- Scanner version.
+- Created and updated timestamps.
+- Detected volume metadata snapshots when available.
+- Relative file paths, never absolute paths.
+- Filesystem metadata: size, mtime, ctime or birthtime when available, file mode, and file type.
+- inode or file ID when available.
+- Fast metadata fingerprint.
+- Scan checkpoint data.
 
-### Phase 2: Media Metadata
+The manifest must not contain:
 
-- Extract capture time, EXIF camera data, image dimensions, video duration, codec, and GPS presence.
-- Normalize dates into queryable fields while keeping raw metadata snapshots.
-- Support sidecar metadata files when formats do not expose enough data safely.
-- Add search/list commands for date ranges, camera/device, extension, size, and location.
+- Secrets or auth tokens.
+- Machine-specific absolute paths.
+- User home paths.
+- EXIF or GPS metadata.
+- Thumbnails.
+- Content hashes by default.
+- Deletion logs with private local paths.
 
-### Phase 3: Backup Planning And Cleanup
+## Milestone One Commands
 
-- Add `plan-backup` to compute what should be copied to a destination.
-- Add `plan-delete` to preview safe cleanup candidates with exact proof.
-- Add a deletion ledger containing timestamp, file hash, original path, copy proof, operator, and command arguments.
-- Add restore planning by hash, date range, album/folder, or location.
-- Require a recent verification window for destructive operations, not only historical scans.
+- `media-manager init`: initialize the local device database.
+- `media-manager register <path> --label <label> --kind <kind>`: create or validate `.media-manager/`.
+- `media-manager roots`: list known managed roots.
+- `media-manager scan <path|label>`: scan filesystem metadata into local SQLite and update the root manifest.
+- `media-manager status`: show local DB status, known roots, stale roots, and latest scan results.
+- `media-manager report unprotected`: show media that appears to exist in fewer than the configured number of roots.
+- `media-manager report duplicates`: show probable duplicates based on metadata fingerprints.
+- `media-manager report stale`: show roots and file observations that need rescan.
+- `media-manager verify <path|query>`: verify current filesystem presence from metadata and local observations.
+- `media-manager manifest export <path|label>`: write a portable manifest snapshot.
+- `media-manager manifest import <file>`: import a manifest from another device or offline root.
 
-### Phase 4: Distributed Manifests
+## Data Model
 
-- Add export/import of signed or checksummed manifests for offline drives.
-- Support conflict-safe merges from multiple local SQLite inventories.
+- `devices`: local devices that run the CLI.
+- `roots`: managed roots with stable IDs and labels.
+- `root_observations`: per-device mount observations and detected volume metadata.
+- `files`: logical file observations keyed by root ID and relative path.
+- `file_versions`: filesystem metadata snapshots for a file over time.
+- `metadata_fingerprints`: fast fingerprints built from filesystem-provided values.
+- `scan_runs`: resumable scan history with counts, timings, and errors.
+- `manifests`: imported and exported manifest snapshots.
+- `reports`: optional cached report results for cron-friendly runs.
+
+## Fingerprint Strategy
+
+Normal scan fingerprints should use filesystem metadata only:
+
+- Relative path.
+- File size.
+- mtime with nanosecond precision when available.
+- ctime or birthtime when available.
+- inode or platform file ID when available.
+- file type and mode.
+
+These fingerprints are useful for inventory, stale detection, and probable duplicate reporting. They are not cryptographic identity. Future `deep-verify` can compute stronger proof only for selected files.
+
+## Cron-Friendly Requirements
+
+- Every command must have deterministic exit codes.
+- Every write command must be safe to rerun.
+- Long scans should record progress and recover cleanly after interruption.
+- Commands should support `--json` for logs and automation.
+- Commands should support `--quiet` for cron.
+- Commands should avoid prompts when required flags are present.
+- Scan errors should be captured per path and summarized at the end.
+
+## Later Phases
+
+### Phase Two: Backup Planning
+
+- Add backup planning reports without copying or deleting.
 - Track location independence so two paths on the same physical disk do not count as two safe copies.
-- Add snapshot backups of the SQLite inventory itself.
+- Add stronger stale checks for backup confidence.
 
-### Phase 5: W7S Sync Service
+### Phase Three: Deep Verification
+
+- Add `deep-verify` for selected files or suspicious groups.
+- Compute content hashes only when explicitly requested.
+- Store deep verification evidence separately from normal metadata fingerprints.
+
+### Phase Four: Cleanup And Restore
+
+- Add preview-only cleanup planning first.
+- Add deletion ledger before any destructive command exists.
+- Require recent verification before any future deletion.
+- Add restore planning by root, path pattern, date range, or fingerprint group.
+
+### Phase Five: W7S Sync
 
 - Add a W7S backend with a D1-compatible inventory model and sync API.
-- Expose `/health` with `branch`, `commitHash`, and `deployedAt`.
-- Sync locations, files, copies, metadata, manifests, and deletion ledger entries.
-- Use idempotent writes keyed by stable IDs and content hashes.
-- Support push/pull from the CLI with conflict reporting before mutation.
-- Keep secrets out of the repo and inject deploy metadata at deployment time.
-
-## Initial Command Roadmap
-
-- `media-manager migrate`
-- `media-manager locations`
-- `media-manager verify-location <path|label>`
-- `media-manager report unprotected`
-- `media-manager report duplicates`
-- `media-manager report stale`
-- `media-manager plan-backup <source> <destination>`
-- `media-manager plan-delete <path|query>`
-- `media-manager restore-plan <sha256|query>`
-- `media-manager manifest export <label>`
-- `media-manager manifest import <file>`
-- `media-manager sync push`
-- `media-manager sync pull`
-- `media-manager sync status`
-
-## Safety Rules
-
-- Never delete from inventory evidence alone; hash and stat the target at execution time.
-- Require at least two independent present copies by default before deletion.
-- Require at least one backup, archive, or cloud class location by default for cleanup workflows.
-- Treat stale scans as warnings for reports and blockers for deletion.
-- Record every destructive action in an append-only deletion ledger.
-- Prefer dry runs and explicit `--yes` confirmation for any filesystem mutation.
-
-## Near-Term MVP Milestone
-
-The next milestone should make the current CLI trustworthy enough for real photo cleanup on one machine plus one backup drive:
-
-1. Add schema migrations and tests.
-2. Add location verification that marks missing paths.
-3. Add unprotected and duplicate reports.
-4. Add deletion ledger entries.
-5. Update deletion to require recently verified copies.
-6. Document a real backup-and-cleanup runbook.
+- Sync roots, manifests, scan summaries, report state, and optional deep verification evidence.
+- Keep secrets out of git.
+- Inject `branch`, `commitHash`, and `deployedAt` into deployed backend health metadata.
