@@ -129,6 +129,8 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
+For a brand-new npm package, trusted publishing cannot be configured until the package exists on npm. Use an npm token or manual publish for the first publish, then switch the package to trusted publishing from npm package settings.
+
 ## Design Notes
 
 - [Architecture](docs/design/architecture.md)

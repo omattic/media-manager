@@ -67,14 +67,27 @@ git push origin v0.1.0
 
 The workflow uses Node 24, pnpm 10.15.0, `pnpm install --frozen-lockfile`, typecheck, tests, build, `npm pack --dry-run`, and then `npm publish --access public --provenance`.
 
-If using npm trusted publishing instead of `NPM_TOKEN`, configure npm trusted publishing for:
+Trusted publishing note:
+
+npm trusted publishing is configured from package settings, so the package must already exist on npm before trusted publishing can be attached. For a brand-new package, bootstrap the first publish with one of these:
+
+- Manual local publish from an npm account that owns the `@omattic` scope:
+
+```sh
+npm login
+npm publish --access public
+```
+
+- GitHub Actions publish using `NPM_TOKEN`, where the token has publish rights and bypass 2FA enabled.
+
+After `@omattic/media-manager` exists on npm, switch to trusted publishing:
 
 - Organization or user: `omattic`
 - Repository: `media-manager`
 - Workflow filename: `publish-npm.yml`
 - Allowed action: `npm publish`
 
-Then remove the `NODE_AUTH_TOKEN` environment block from the publish step.
+Then remove the `NODE_AUTH_TOKEN` environment block from the publish step and remove the `NPM_TOKEN` repository secret.
 
 ## Planning Documents
 
