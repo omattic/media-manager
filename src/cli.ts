@@ -89,6 +89,13 @@ function runCommand(command: string, args: string[], globals: GlobalOptions): nu
     return result.errors > 0 ? 1 : 0;
   }
 
+  if (command === "scan-errors") {
+    const target = requireArg(args, "path, label, or scan run id");
+    const result = scanErrorsFor(app.db, target);
+    writeOutput(globals, result.errors.length > 0 ? formatRows(result.errors) : "No scan errors.", result);
+    return 0;
+  }
+
   if (command === "status") {
     const status = {
       dbPath: globals.dbPath,
@@ -332,6 +339,94 @@ function findRegisteredAncestor(absolutePath: string): string | undefined {
   }
 }
 
+interface ScanErrorsResult {
+  target: string;
+  scanRunId: string;
+  rootLabel: string;
+  scannedAt: string;
+  errors: {
+    path: string;
+    message: string;
+    createdAt: string;
+  }[];
+}
+
+function scanErrorsFor(db: Database.Database, target: string): ScanErrorsResult {
+  const directRun = scanRunById(db, target);
+  if (directRun) {
+    return scanErrorsForRun(db, target, directRun);
+  }
+
+  const root = rootForScanErrorTarget(db, target);
+  const latestRun = db.prepare(`
+    SELECT
+      sr.id AS scanRunId,
+      r.label AS rootLabel,
+      COALESCE(sr.completed_at, sr.started_at) AS scannedAt
+    FROM scan_runs sr
+    JOIN roots r ON r.id = sr.root_id
+    WHERE sr.root_id = ?
+    ORDER BY COALESCE(sr.completed_at, sr.started_at) DESC, sr.started_at DESC
+    LIMIT 1
+  `).get(root.rootId) as { scanRunId: string; rootLabel: string; scannedAt: string } | undefined;
+  if (!latestRun) {
+    throw new CliError(`No scan runs found for root: ${root.label}`, 2);
+  }
+  return scanErrorsForRun(db, target, latestRun);
+}
+
+function scanRunById(
+  db: Database.Database,
+  scanRunId: string
+): { scanRunId: string; rootLabel: string; scannedAt: string } | undefined {
+  return db.prepare(`
+    SELECT
+      sr.id AS scanRunId,
+      r.label AS rootLabel,
+      COALESCE(sr.completed_at, sr.started_at) AS scannedAt
+    FROM scan_runs sr
+    JOIN roots r ON r.id = sr.root_id
+    WHERE sr.id = ?
+  `).get(scanRunId) as { scanRunId: string; rootLabel: string; scannedAt: string } | undefined;
+}
+
+function rootForScanErrorTarget(db: Database.Database, target: string): { rootId: string; label: string } {
+  const byLabel = db.prepare("SELECT id AS rootId, label FROM roots WHERE label = ?").get(target) as
+    | { rootId: string; label: string }
+    | undefined;
+  if (byLabel) {
+    return byLabel;
+  }
+
+  const resolved = resolve(target);
+  if (existsSync(resolved)) {
+    const { identity } = requireRegisteredRoot(resolved);
+    return { rootId: identity.rootId, label: identity.label };
+  }
+
+  throw new CliError(`No scan run, root label, or registered path found: ${target}`, 2);
+}
+
+function scanErrorsForRun(
+  db: Database.Database,
+  target: string,
+  run: { scanRunId: string; rootLabel: string; scannedAt: string }
+): ScanErrorsResult {
+  const errors = db.prepare(`
+    SELECT path, message, created_at AS createdAt
+    FROM scan_errors
+    WHERE scan_run_id = ?
+    ORDER BY id
+  `).all(run.scanRunId) as ScanErrorsResult["errors"];
+  return {
+    target,
+    scanRunId: run.scanRunId,
+    rootLabel: run.rootLabel,
+    scannedAt: run.scannedAt,
+    errors
+  };
+}
+
 function formatRows(rows: unknown[]): string {
   if (rows.length === 0) {
     return "No rows.";
@@ -380,6 +475,7 @@ Commands:
   register <path> --label <label> [--kind external|backup|cloud|archive|device]
   roots
   scan <path> [--all]
+  scan-errors <path|label|scan-run-id>
   status
   report duplicates
   report unprotected [--min-roots 2]

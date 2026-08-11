@@ -134,6 +134,14 @@ media-manager report stale
 
 The `unprotected` report will usually list everything after the first scan because the system has only seen one location. Once a second registered location has overlapping media, the report shows what still needs another copy.
 
+If a scan reports errors, inspect the exact paths and messages from the latest scan:
+
+```sh
+media-manager scan-errors google-takeout-drive
+```
+
+The same error details are also written to `.media-manager/manifest.json` in the scanned root.
+
 Scans are safe to run again, but they are not true resumable checkpoint scans yet. If a scan is interrupted, run the same command again and it will start a fresh scan from the beginning.
 
 The default database path is:

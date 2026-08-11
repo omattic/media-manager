@@ -67,6 +67,14 @@ function migrate(db: Database.Database): void {
       manifest_path TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS scan_errors (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      scan_run_id TEXT NOT NULL REFERENCES scan_runs(id) ON DELETE CASCADE,
+      path TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS files (
       root_id TEXT NOT NULL REFERENCES roots(id) ON DELETE CASCADE,
       relative_path TEXT NOT NULL,
@@ -96,6 +104,7 @@ function migrate(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_file_versions_fingerprint ON file_versions(metadata_fingerprint);
     CREATE INDEX IF NOT EXISTS idx_file_versions_file ON file_versions(root_id, relative_path, observed_at);
+    CREATE INDEX IF NOT EXISTS idx_scan_errors_run ON scan_errors(scan_run_id);
 
     CREATE TABLE IF NOT EXISTS manifests (
       id TEXT PRIMARY KEY,
@@ -106,6 +115,7 @@ function migrate(db: Database.Database): void {
     );
   `);
   db.prepare("INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)").run(1, nowIso());
+  db.prepare("INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)").run(2, nowIso());
 }
 
 function ensureDevice(db: Database.Database): string {

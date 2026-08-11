@@ -46,6 +46,15 @@ node dist/cli.js --json scan source-device
 
 Current scan interruption behavior: scans are safe to re-run from the beginning, but checkpoint resume is not implemented yet.
 
+Inspect exact scan errors for the latest root scan:
+
+```sh
+node dist/cli.js scan-errors source-device
+node dist/cli.js --json scan-errors source-device
+```
+
+`scan-errors` accepts a root label, mounted registered path, or exact scan run id. Error details are stored in SQLite and copied into `.media-manager/manifest.json`.
+
 ## Auto-Update
 
 Published npm installs check for the latest `@omattic/media-manager` version before every command. Source checkout runs skip auto-update automatically because their entrypoint is not under `node_modules/@omattic/media-manager`.

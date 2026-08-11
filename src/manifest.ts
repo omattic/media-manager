@@ -37,6 +37,7 @@ export function importManifest(db: Database.Database, sourcePath: string): RootM
     );
 
     const scanRunId = manifest.scan.scanRunId;
+    const scanErrors = manifest.scanErrors ?? [];
     db.prepare(`
       INSERT OR IGNORE INTO scan_runs (id, root_id, device_id, started_at, completed_at, status, files_seen, errors, manifest_path)
       VALUES (?, ?, (SELECT id FROM devices ORDER BY created_at LIMIT 1), ?, ?, ?, ?, ?, ?)
@@ -47,9 +48,17 @@ export function importManifest(db: Database.Database, sourcePath: string): RootM
       manifest.scan.scannedAt,
       "imported",
       manifest.scan.filesSeen,
-      manifest.scan.errors,
+      scanErrors.length,
       resolve(sourcePath)
     );
+    db.prepare("DELETE FROM scan_errors WHERE scan_run_id = ?").run(scanRunId);
+    const insertError = db.prepare(`
+      INSERT INTO scan_errors (scan_run_id, path, message, created_at)
+      VALUES (?, ?, ?, ?)
+    `);
+    for (const error of scanErrors) {
+      insertError.run(scanRunId, error.path, error.message, manifest.scan.scannedAt);
+    }
 
     const upsertFile = db.prepare(`
       INSERT INTO files (root_id, relative_path, file_type, first_seen_at, last_seen_at, status)

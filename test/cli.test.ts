@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -65,5 +65,34 @@ describe("media-manager CLI", () => {
     expect(logOutput).toContain("Writing manifest:");
     expect(logOutput).toContain("Scan complete:");
     expect(stdout).toHaveBeenCalled();
+  });
+
+  it("stores scan error details for the latest root scan", () => {
+    const workspace = tempWorkspace();
+    writeFileSync(join(workspace.root, "photo.jpg"), "sample");
+    const deniedPath = join(workspace.root, "denied");
+    mkdirSync(deniedPath);
+    chmodSync(deniedPath, 0);
+
+    try {
+      expect(run(["--db", workspace.db, "--quiet", "register", workspace.root, "--label", "drive-a"])).toBe(0);
+      expect(run(["--db", workspace.db, "--quiet", "scan", "drive-a"])).toBe(1);
+
+      const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+      expect(run(["--db", workspace.db, "--json", "scan-errors", "drive-a"])).toBe(0);
+
+      const output = stdout.mock.calls.map(([chunk]) => String(chunk)).join("");
+      const result = JSON.parse(output) as { errors: { path: string; message: string }[] };
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]?.path).toBe("denied");
+
+      const manifest = JSON.parse(
+        readFileSync(join(workspace.root, ".media-manager", "manifest.json"), "utf8")
+      ) as { scanErrors: { path: string; message: string }[] };
+      expect(manifest.scanErrors).toHaveLength(1);
+      expect(manifest.scanErrors[0]?.path).toBe("denied");
+    } finally {
+      chmodSync(deniedPath, 0o700);
+    }
   });
 });

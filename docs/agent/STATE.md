@@ -20,11 +20,13 @@ Current product state:
 - The CLI is implemented in TypeScript for Node.js with `pnpm`.
 - Local SQLite storage uses `better-sqlite3`.
 - The CLI supports `init`, `register`, `roots`, `scan`, `status`, `report`, `verify`, and `manifest`.
+- The CLI supports `scan-errors <path|label|scan-run-id>` for exact latest-scan error details.
 - Published npm installs auto-check for new versions before every command and update the global package when a newer version exists.
 - Interactive `scan` runs print progress logs to stderr. `--quiet` and `--json` suppress progress logs.
 - Inventory is SQLite-backed and local-first.
 - Managed roots are writable folders or drives with `.media-manager/`.
 - Normal scans use filesystem metadata only and do not read media file contents.
+- Scan error details are stored in SQLite and in each scanned root manifest.
 - Scans are safe to re-run, but true checkpoint resume is not implemented yet. Interrupted scans should be restarted with the same command.
 - Milestone one does not include deletion or cleanup commands.
 

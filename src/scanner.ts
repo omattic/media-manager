@@ -6,7 +6,7 @@ import { APP_DIR_NAME, MANIFEST_FILE_NAME, MEDIA_EXTENSIONS } from "./constants.
 import { metadataFingerprint } from "./fingerprint.js";
 import { appDir, volumeMetadata } from "./root.js";
 import { nowIso } from "./time.js";
-import type { FileManifestEntry, RootIdentity, RootManifest } from "./types.js";
+import type { FileManifestEntry, RootIdentity, RootManifest, ScanErrorEntry } from "./types.js";
 
 export interface ScanResult {
   scanRunId: string;
@@ -29,11 +29,6 @@ export interface ScanProgressEvent {
 
 export type ScanProgressHandler = (event: ScanProgressEvent) => void;
 
-interface ScanError {
-  path: string;
-  message: string;
-}
-
 interface WalkStats {
   directoriesSeen: number;
   lastProgressFiles: number;
@@ -53,7 +48,7 @@ export function scanRoot(
   const startedAt = nowIso();
   const manifestPath = join(appDir(rootPath), MANIFEST_FILE_NAME);
   const entries: FileManifestEntry[] = [];
-  const errors: ScanError[] = [];
+  const errors: ScanErrorEntry[] = [];
   const seen = new Set<string>();
   const stats: WalkStats = {
     directoriesSeen: 0,
@@ -95,6 +90,10 @@ export function scanRoot(
         scan_run_id
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
+    const insertError = db.prepare(`
+      INSERT INTO scan_errors (scan_run_id, path, message, created_at)
+      VALUES (?, ?, ?, ?)
+    `);
 
     for (const entry of entries) {
       upsertFile.run(identity.rootId, entry.relativePath, now, now);
@@ -112,6 +111,10 @@ export function scanRoot(
         now,
         scanRunId
       );
+    }
+
+    for (const error of errors) {
+      insertError.run(scanRunId, error.path, error.message, now);
     }
 
     const existing = db.prepare("SELECT relative_path FROM files WHERE root_id = ? AND status = 'present'").all(
@@ -150,6 +153,7 @@ export function scanRoot(
       filesSeen: entries.length,
       errors: errors.length
     },
+    scanErrors: errors,
     files: entries.sort((a, b) => a.relativePath.localeCompare(b.relativePath))
   };
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -171,7 +175,7 @@ function walk(
   includeAll: boolean,
   entries: FileManifestEntry[],
   seen: Set<string>,
-  errors: ScanError[],
+  errors: ScanErrorEntry[],
   stats: WalkStats,
   onProgress?: ScanProgressHandler
 ): void {
@@ -179,7 +183,10 @@ function walk(
   try {
     dirents = readdirSync(currentPath, { withFileTypes: true });
   } catch (error) {
-    errors.push({ path: currentPath, message: error instanceof Error ? error.message : String(error) });
+    errors.push({
+      path: pathForError(rootPath, currentPath),
+      message: error instanceof Error ? error.message : String(error)
+    });
     maybeEmitWalkingProgress(onProgress, entries, stats, errors, currentPath);
     return;
   }
@@ -208,7 +215,10 @@ function walk(
       seen.add(entry.relativePath);
       maybeEmitWalkingProgress(onProgress, entries, stats, errors, absolutePath);
     } catch (error) {
-      errors.push({ path: absolutePath, message: error instanceof Error ? error.message : String(error) });
+      errors.push({
+        path: pathForError(rootPath, absolutePath),
+        message: error instanceof Error ? error.message : String(error)
+      });
       maybeEmitWalkingProgress(onProgress, entries, stats, errors, absolutePath);
     }
   }
@@ -218,7 +228,7 @@ function maybeEmitWalkingProgress(
   onProgress: ScanProgressHandler | undefined,
   entries: FileManifestEntry[],
   stats: WalkStats,
-  errors: ScanError[],
+  errors: ScanErrorEntry[],
   currentPath: string
 ): void {
   if (!onProgress) {
@@ -239,7 +249,7 @@ function emitProgress(
   phase: ScanProgressPhase,
   entries: FileManifestEntry[],
   stats: WalkStats,
-  errors: ScanError[],
+  errors: ScanErrorEntry[],
   currentPath?: string
 ): void {
   onProgress?.({
@@ -249,6 +259,11 @@ function emitProgress(
     errors: errors.length,
     currentPath
   });
+}
+
+function pathForError(rootPath: string, absolutePath: string): string {
+  const relativePath = normalizeRelativePath(relative(rootPath, resolve(absolutePath)));
+  return relativePath || ".";
 }
 
 export function entryForFile(rootPath: string, absolutePath: string): FileManifestEntry {

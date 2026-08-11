@@ -27,6 +27,11 @@ export interface FileManifestEntry {
   metadataFingerprint: string;
 }
 
+export interface ScanErrorEntry {
+  path: string;
+  message: string;
+}
+
 export interface RootManifest {
   manifestVersion: number;
   rootId: string;
@@ -42,6 +47,7 @@ export interface RootManifest {
     filesSeen: number;
     errors: number;
   };
+  scanErrors?: ScanErrorEntry[];
   files: FileManifestEntry[];
 }
 

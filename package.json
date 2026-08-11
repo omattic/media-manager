@@ -1,6 +1,6 @@
 {
   "name": "@omattic/media-manager",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Local-first media inventory CLI for writable drives and mounted folders.",
   "type": "module",
   "bin": {

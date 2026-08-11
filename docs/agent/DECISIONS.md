@@ -51,3 +51,7 @@ Published npm installs should check for new package versions before each command
 ## 2026-08-11: Interactive Scan Progress, Checkpoint Resume Deferred
 
 Interactive scans should print progress logs to stderr so users can see traversal, finalization, manifest writing, and completion. `--quiet` and `--json` should suppress progress logs for automation. Scans are safe to re-run after interruption, but true checkpoint resume requires future traversal checkpointing and partial-run reconciliation.
+
+## 2026-08-11: Scan Errors Are Inspectable
+
+Scan error details should be persisted in SQLite and written into the scanned root manifest. Users should be able to inspect the latest root scan errors with `scan-errors <path|label|scan-run-id>` instead of opening SQLite manually.
