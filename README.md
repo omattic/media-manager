@@ -134,7 +134,7 @@ media-manager report stale
 
 The `unprotected` report will usually list everything after the first scan because the system has only seen one location. Once a second registered location has overlapping media, the report shows what still needs another copy.
 
-The `duplicates` report uses a portable metadata fingerprint built from filesystem metadata that can survive copying between drives, currently file size and modified time. It is a probable duplicate report, not a content-hash guarantee.
+The `duplicates` report uses metadata-only signals that can survive common copies and exports. It reports exact portable fingerprint matches based on file size and modified time, plus looser same-name/same-size candidates when modified times differ. It is a probable duplicate report, not a content-hash guarantee.
 
 If a scan reports errors, inspect the exact paths and messages from the latest scan:
 

@@ -1,4 +1,6 @@
 import type Database from "better-sqlite3";
+import { createHash } from "node:crypto";
+import { posix } from "node:path";
 
 interface LatestFileRow {
   root_id: string;
@@ -8,6 +10,20 @@ interface LatestFileRow {
   size_bytes: string | null;
   metadata_fingerprint: string | null;
   observed_at: string | null;
+}
+
+interface DuplicateFile {
+  root: string;
+  relativePath: string;
+  sizeBytes: string | null;
+  observedAt: string | null;
+}
+
+interface DuplicateGroup {
+  fingerprint: string;
+  matchBasis: "metadata-fingerprint" | "name-size";
+  count: number;
+  files: DuplicateFile[];
 }
 
 export function latestFiles(db: Database.Database): LatestFileRow[] {
@@ -33,9 +49,10 @@ export function latestFiles(db: Database.Database): LatestFileRow[] {
   `).all() as LatestFileRow[];
 }
 
-export function duplicateReport(db: Database.Database): unknown[] {
+export function duplicateReport(db: Database.Database): DuplicateGroup[] {
+  const rows = latestFiles(db).filter(isReportableFile);
   const groups = new Map<string, LatestFileRow[]>();
-  for (const row of latestFiles(db)) {
+  for (const row of rows) {
     if (!row.metadata_fingerprint) {
       continue;
     }
@@ -43,18 +60,73 @@ export function duplicateReport(db: Database.Database): unknown[] {
     list.push(row);
     groups.set(row.metadata_fingerprint, list);
   }
-  return [...groups.entries()]
+
+  const exactGroups = [...groups.entries()]
     .filter(([, files]) => files.length > 1)
-    .map(([fingerprint, files]) => ({
-      fingerprint,
-      count: files.length,
-      files: files.map((file) => ({
-        root: file.root_label,
-        relativePath: file.relative_path,
-        sizeBytes: file.size_bytes,
-        observedAt: file.observed_at
-      }))
-    }));
+    .map(([fingerprint, files]) => duplicateGroup("metadata-fingerprint", fingerprint, files));
+  const seenSignatures = new Set(exactGroups.map((group) => fileSetSignature(group.files)));
+  const nameSizeGroups = new Map<string, LatestFileRow[]>();
+  for (const row of rows) {
+    const key = nameSizeCandidateKey(row);
+    if (!key) {
+      continue;
+    }
+    const list = nameSizeGroups.get(key) ?? [];
+    list.push(row);
+    nameSizeGroups.set(key, list);
+  }
+
+  const candidateGroups = [...nameSizeGroups.entries()]
+    .filter(([, files]) => files.length > 1)
+    .map(([key, files]) => duplicateGroup("name-size", key, files))
+    .filter((group) => {
+      const signature = fileSetSignature(group.files);
+      if (seenSignatures.has(signature)) {
+        return false;
+      }
+      seenSignatures.add(signature);
+      return true;
+    });
+
+  return [...exactGroups, ...candidateGroups];
+}
+
+function duplicateGroup(
+  matchBasis: DuplicateGroup["matchBasis"],
+  fingerprint: string,
+  files: LatestFileRow[]
+): DuplicateGroup {
+  return {
+    fingerprint,
+    matchBasis,
+    count: files.length,
+    files: files.map((file) => ({
+      root: file.root_label,
+      relativePath: file.relative_path,
+      sizeBytes: file.size_bytes,
+      observedAt: file.observed_at
+    }))
+  };
+}
+
+function nameSizeCandidateKey(row: LatestFileRow): string | undefined {
+  if (!row.size_bytes) {
+    return undefined;
+  }
+  const fileName = posix.basename(row.relative_path).normalize("NFC").toLowerCase();
+  const payload = ["name-size", fileName, row.size_bytes].join("\0");
+  return createHash("sha256").update(payload).digest("hex");
+}
+
+function isReportableFile(row: LatestFileRow): boolean {
+  return !posix.basename(row.relative_path).startsWith("._");
+}
+
+function fileSetSignature(files: { root: string; relativePath: string }[]): string {
+  return files
+    .map((file) => `${file.root}\0${file.relativePath}`)
+    .sort()
+    .join("\0");
 }
 
 export function unprotectedReport(db: Database.Database, minRoots: number): unknown[] {

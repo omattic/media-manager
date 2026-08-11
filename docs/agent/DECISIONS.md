@@ -58,4 +58,6 @@ Scan error details should be persisted in SQLite and written into the scanned ro
 
 ## 2026-08-11: Duplicate Fingerprints Must Be Portable
 
-Normal duplicate and protection reports should group files by a copy-portable metadata fingerprint. The fingerprint should not include relative path, inode, device id, ctime, or birthtime because those change across backup drives. The current portable fingerprint uses file size and modified time, so duplicate results are probable, not content-hash guarantees.
+Normal protection reports should group files by a copy-portable metadata fingerprint. The fingerprint should not include relative path, inode, device id, ctime, or birthtime because those change across backup drives. The current portable fingerprint uses file size and modified time.
+
+Normal duplicate reports should include exact portable fingerprint matches and looser same-name/same-size candidates for copied or exported files whose modified times changed. Duplicate results are probable, not content-hash guarantees.
