@@ -6,6 +6,7 @@ Current repository state:
 
 - Local repo: `/home/gnu/media-manager`
 - GitHub remote: `https://github.com/omattic/media-manager.git`
+- GitHub visibility: public
 - Telegram manager topic: `media-manager` topic id `8862`, runtime binding id `121`, chat id `-1003996402615`
 - Primary package: TypeScript CLI package `media-manager`
 - npm package name: `@omattic/media-manager`

@@ -131,7 +131,7 @@ git push origin v0.1.1
 
 For a brand-new npm package, trusted publishing cannot be configured until the package exists on npm. Use an npm token or manual publish for the first publish, then switch the package to trusted publishing from npm package settings.
 
-The repository is private, so the workflow does not request npm provenance. npm provenance requires a public GitHub source repository.
+The repository is public, so the workflow publishes with npm provenance.
 
 ## Design Notes
 

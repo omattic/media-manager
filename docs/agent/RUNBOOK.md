@@ -66,9 +66,9 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The workflow uses Node 24, pnpm 10.15.0, `pnpm install --frozen-lockfile`, typecheck, tests, build, `npm pack --dry-run`, and then `npm publish --access public`.
+The workflow uses Node 24, pnpm 10.15.0, `pnpm install --frozen-lockfile`, typecheck, tests, build, `npm pack --dry-run`, and then `npm publish --access public --provenance`.
 
-The repository is private, so the workflow does not use npm provenance. npm rejects provenance for private GitHub source repositories.
+The repository is public, so npm provenance is supported.
 
 Trusted publishing note:
 
